@@ -1,6 +1,6 @@
 public virtual without sharing class AmazonWebServicesHelper {
 
-	public final Integer maxTimeout = 2 * 60 * 1000;
+	public static final Http CLIENT = new Http();
 
 	@SuppressWarnings('PMD.FieldNamingConventions')
 	public enum AmazonSpecific {
@@ -33,12 +33,15 @@ public virtual without sharing class AmazonWebServicesHelper {
 		HTTP_DELETE
 	}
 
+	public final Integer maxTimeout = 2 * 60 * 1000;
+
 	protected String getSignatureWithoutPayload(AmazonData awsData) {
 		final DateTime now = System.now();
 		final String nowDate = now.format('yyyyMMdd');
 		final String nowDateTime = now.format('yyyyMMdd\'T\'HHmmss\'Z\'');
 		final String hostHeader = 'host';
-		final String request = nowDate + '/' + awsData.serviceRegion + '/' + awsData.serviceName + '/' + AmazonSpecific.aws4_request.name();
+		final String request = 
+			nowDate + '/' + awsData.serviceRegion + '/' + awsData.serviceName + '/' + AmazonSpecific.aws4_request.name();
 
 		final String credential = encodeString(
 			awsData.awsKey + '/' + request,

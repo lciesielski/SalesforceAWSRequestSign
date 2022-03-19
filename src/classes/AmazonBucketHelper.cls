@@ -1,13 +1,13 @@
 public without sharing class AmazonBucketHelper extends AmazonWebServicesHelper {
 
-	public void deleteBucketObject(String awsKey, String awsSecret) {
+	public HttpResponse deleteBucketObject(String awsKey, String awsSecret, String bucketName, String objectKey) {
 		final AmazunBucketData awsBucketData = new AmazunBucketData();
 
 		awsBucketData.awsKey = awsKey;
 		awsBucketData.awsSecret = awsSecret;
 
-		awsBucketData.bucketName = 'asgard-0';
-		awsBucketData.objectKey = ':~~.jpg';
+		awsBucketData.bucketName = bucketName;
+		awsBucketData.objectKey = objectKey;
 
 		awsBucketData.httpMethod = HttpMethod.HTTP_DELETE;
 		awsBucketData.path = encodeString(awsBucketData.objectKey, false);
@@ -23,8 +23,8 @@ public without sharing class AmazonBucketHelper extends AmazonWebServicesHelper 
 		request.setEndpoint(
 			'https://' + awsBucketData.host + '/' + awsBucketData.path + getSignatureWithoutPayload(awsBucketData)
 		);
-		
-		new Http().send(request);
+
+		return CLIENT.send(request);
 	}
 
 	public class AmazunBucketData extends AmazonData {
