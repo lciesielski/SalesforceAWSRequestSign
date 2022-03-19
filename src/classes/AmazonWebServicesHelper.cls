@@ -15,15 +15,20 @@ public virtual without sharing class AmazonWebServicesHelper {
 		UNSIGNED_PAYLOAD
 	}
 
+	public enum Config {
+		AWS_KEY,
+		AWS_SECRET
+	}
+
+	public enum Encoding {
+		UTF_8
+	}
+
 	@SuppressWarnings('PMD.FieldNamingConventions')
 	public enum HashAlgorithm {
 		AWS4_HMAC_SHA256,
 		hmacSHA256,
 		SHA256
-	}
-
-	public enum Encoding {
-		UTF_8
 	}
 
 	public enum HttpMethod {
@@ -35,16 +40,16 @@ public virtual without sharing class AmazonWebServicesHelper {
 
 	public final Integer maxTimeoutSeconds = 2 * 60;
 
-	protected String getPresignedURLSignature(AmazonData awsData) {
+	protected String getPresignedURLSignature(RequestData requestData) {
 		final DateTime now = System.now();
 		final String nowDate = now.format('yyyyMMdd');
 		final String nowDateTime = now.format('yyyyMMdd\'T\'HHmmss\'Z\'');
 		final String hostHeader = 'host';
 		final String request = 
-			nowDate + '/' + awsData.serviceRegion + '/' + awsData.serviceName + '/' + AmazonSpecific.aws4_request.name();
+			nowDate + '/' + requestData.serviceRegion + '/' + requestData.serviceName + '/' + AmazonSpecific.aws4_request.name();
 
 		final String credential = encodeString(
-			awsData.awsKey + '/' + request,
+			requestData.key + '/' + request,
 			true
 		);
 
@@ -57,10 +62,10 @@ public virtual without sharing class AmazonWebServicesHelper {
 			AmazonSpecific.X_Amz_SignedHeaders.name().replaceAll('_', '-') + '=' + hostHeader;
 
 		final String canonicalRequest = 
-			awsData.httpMethod.name().removeStart('HTTP_') + '\n' +
-			'/' + awsData.path + '\n' +
+			requestData.httpMethod.name().removeStart('HTTP_') + '\n' +
+			'/' + requestData.path + '\n' +
 			requiredSignatureQueryParameters + '\n' +
-			hostHeader + ':' + awsData.host + '\n\n' + 
+			hostHeader + ':' + requestData.host + '\n\n' + 
 			hostHeader + '\n' +
 			AmazonSpecific.UNSIGNED_PAYLOAD.name().replaceAll('_', '-');
 
@@ -79,14 +84,14 @@ public virtual without sharing class AmazonWebServicesHelper {
 				Blob.valueOf(AmazonSpecific.aws4_request.name()), 
 				Crypto.generateMac(
 					HashAlgorithm.hmacSHA256.name(), 
-					Blob.valueOf(awsData.serviceName), 
+					Blob.valueOf(requestData.serviceName), 
 					Crypto.generateMac(
 						HashAlgorithm.hmacSHA256.name(), 
-						Blob.valueOf(awsData.serviceRegion), 
+						Blob.valueOf(requestData.serviceRegion), 
 						Crypto.generateMac(
 							HashAlgorithm.hmacSHA256.name(), 
 							Blob.valueOf(nowDate), 
-							Blob.valueOf(AmazonSpecific.AWS4.name() + awsData.awsSecret
+							Blob.valueOf(AmazonSpecific.AWS4.name() + requestData.secret
 						)
 					)
 				)
@@ -131,17 +136,16 @@ public virtual without sharing class AmazonWebServicesHelper {
 		return result;
 	}
 
-	public virtual class AmazonData {
+	public virtual class RequestData {
 		public HttpMethod httpMethod;
 		
-		public String awsKey;
-		public String awsSecret;
+		public String key;
+		public String secret;
 
 		public String host;
 		public String path;
 		public String serviceName;
 		public String serviceRegion;
-		public String payload = '';
 	}
 
 }

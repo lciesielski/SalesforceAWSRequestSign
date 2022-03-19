@@ -1,18 +1,13 @@
 public without sharing class AmazonBucketHelper extends AmazonWebServicesHelper {
 
-	public HttpResponse deleteBucketObject(String awsKey, String awsSecret, String bucketName, String objectKey) {
-		final AmazunBucketData awsBucketData = new AmazunBucketData();
+	private final ExtendedRequestData awsBucketData;
 
-		awsBucketData.awsKey = awsKey;
-		awsBucketData.awsSecret = awsSecret;
+	public AmazonBucketHelper(ExtendedRequestData awsBucketData) {
+		this.awsBucketData = awsBucketData;
+	}
 
-		awsBucketData.bucketName = bucketName;
-		awsBucketData.objectKey = objectKey;
-
-		awsBucketData.httpMethod = HttpMethod.HTTP_DELETE;
+	public HttpResponse sendRequestToS3Bucket() {
 		awsBucketData.path = encodeString(awsBucketData.bucketName + '/' + awsBucketData.objectKey, false);
-		awsBucketData.serviceName = 's3';
-		awsBucketData.serviceRegion = 'eu-central-1';
 		awsBucketData.host = 
 			awsBucketData.serviceName + '.' + 
 			awsBucketData.serviceRegion + '.amazonaws.com';
@@ -23,10 +18,23 @@ public without sharing class AmazonBucketHelper extends AmazonWebServicesHelper 
 			'https://' + awsBucketData.host + '/' + awsBucketData.path + getPresignedURLSignature(awsBucketData)
 		);
 
+		if (awsBucketData.binaryPayload != null) {
+			request.setBodyAsBlob(awsBucketData.binaryPayload);
+		}
+
+		if (!awsBucketData.headers.isEmpty()) {
+			for (String key : awsBucketData.headers.keySet()) {
+				request.setHeader(key, awsBucketData.headers.get(key));
+			}
+		}
+
 		return CLIENT.send(request);
 	}
 
-	public class AmazunBucketData extends AmazonData {
+	public class ExtendedRequestData extends RequestData {
+		public Map<String, String> headers = new Map<String, String>();
+		
+		public Blob binaryPayload;
 		public String bucketName;
 		public String objectKey;
 	}
