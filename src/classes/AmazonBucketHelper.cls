@@ -10,11 +10,10 @@ public without sharing class AmazonBucketHelper extends AmazonWebServicesHelper 
 		awsBucketData.objectKey = objectKey;
 
 		awsBucketData.httpMethod = HttpMethod.HTTP_DELETE;
-		awsBucketData.path = encodeString(awsBucketData.objectKey, false);
+		awsBucketData.path = encodeString(awsBucketData.bucketName + '/' + awsBucketData.objectKey, false);
 		awsBucketData.serviceName = 's3';
 		awsBucketData.serviceRegion = 'eu-central-1';
 		awsBucketData.host = 
-			awsBucketData.bucketName + '.' + 
 			awsBucketData.serviceName + '.' + 
 			awsBucketData.serviceRegion + '.amazonaws.com';
 
