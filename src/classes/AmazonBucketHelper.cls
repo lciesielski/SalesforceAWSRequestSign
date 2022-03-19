@@ -20,7 +20,7 @@ public without sharing class AmazonBucketHelper extends AmazonWebServicesHelper 
 		final HttpRequest request = new HttpRequest();	
 		request.setMethod(awsBucketData.httpMethod.name().removeStart('HTTP_'));
 		request.setEndpoint(
-			'https://' + awsBucketData.host + '/' + awsBucketData.path + getSignatureWithoutPayload(awsBucketData)
+			'https://' + awsBucketData.host + '/' + awsBucketData.path + getPresignedURLSignature(awsBucketData)
 		);
 
 		return CLIENT.send(request);

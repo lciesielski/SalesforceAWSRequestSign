@@ -35,7 +35,7 @@ public virtual without sharing class AmazonWebServicesHelper {
 
 	public final Integer maxTimeoutSeconds = 2 * 60;
 
-	protected String getSignatureWithoutPayload(AmazonData awsData) {
+	protected String getPresignedURLSignature(AmazonData awsData) {
 		final DateTime now = System.now();
 		final String nowDate = now.format('yyyyMMdd');
 		final String nowDateTime = now.format('yyyyMMdd\'T\'HHmmss\'Z\'');
