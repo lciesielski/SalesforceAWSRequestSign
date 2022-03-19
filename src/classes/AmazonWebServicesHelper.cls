@@ -33,7 +33,7 @@ public virtual without sharing class AmazonWebServicesHelper {
 		HTTP_DELETE
 	}
 
-	public final Integer maxTimeout = 2 * 60 * 1000;
+	public final Integer maxTimeoutSeconds = 2 * 60;
 
 	protected String getSignatureWithoutPayload(AmazonData awsData) {
 		final DateTime now = System.now();
@@ -53,7 +53,7 @@ public virtual without sharing class AmazonWebServicesHelper {
 				HashAlgorithm.AWS4_HMAC_SHA256.name().replaceAll('_', '-') + '&' +
 			AmazonSpecific.X_Amz_Credential.name().replaceAll('_', '-') + '=' + credential + '&' +
 			AmazonSpecific.X_Amz_Date.name().replaceAll('_', '-') + '=' + nowDateTime + '&' +
-			AmazonSpecific.X_Amz_Expires.name().replaceAll('_', '-') + '=' + maxTimeout + '&' +
+			AmazonSpecific.X_Amz_Expires.name().replaceAll('_', '-') + '=' + maxTimeoutSeconds + '&' +
 			AmazonSpecific.X_Amz_SignedHeaders.name().replaceAll('_', '-') + '=' + hostHeader;
 
 		final String canonicalRequest = 
