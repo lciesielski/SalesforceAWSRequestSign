@@ -1,7 +1,8 @@
 public virtual without sharing class AmazonWebServicesHelper {
 
-	public final Integer MAX_TIMEOUT = 2 * 60 * 1000;
+	public final Integer maxTimeout = 2 * 60 * 1000;
 
+	@SuppressWarnings('PMD.FieldNamingConventions')
 	public enum AmazonSpecific {
 		aws4_request,
 		X_Amz_Algorithm,
@@ -14,6 +15,7 @@ public virtual without sharing class AmazonWebServicesHelper {
 		UNSIGNED_PAYLOAD
 	}
 
+	@SuppressWarnings('PMD.FieldNamingConventions')
 	public enum HashAlgorithm {
 		AWS4_HMAC_SHA256,
 		hmacSHA256,
@@ -43,18 +45,18 @@ public virtual without sharing class AmazonWebServicesHelper {
 			true
 		);
 
-		final String hashedPayload = EncodingUtil.convertToHex(
-			Crypto.generateDigest(HashAlgorithm.SHA256.name(), Blob.valueOf(awsData.payload))
-		).toLowerCase();
+		final String requiredSignatureQueryParameters = 
+			AmazonSpecific.X_Amz_Algorithm.name().replaceAll('_', '-') + '=' + 
+				HashAlgorithm.AWS4_HMAC_SHA256.name().replaceAll('_', '-') + '&' +
+			AmazonSpecific.X_Amz_Credential.name().replaceAll('_', '-') + '=' + credential + '&' +
+			AmazonSpecific.X_Amz_Date.name().replaceAll('_', '-') + '=' + nowDateTime + '&' +
+			AmazonSpecific.X_Amz_Expires.name().replaceAll('_', '-') + '=' + maxTimeout + '&' +
+			AmazonSpecific.X_Amz_SignedHeaders.name().replaceAll('_', '-') + '=' + hostHeader;
 
 		final String canonicalRequest = 
 			awsData.httpMethod.name().removeStart('HTTP_') + '\n' +
 			'/' + awsData.path + '\n' +
-			AmazonSpecific.X_Amz_Algorithm.name().replaceAll('_', '-') + '=' + HashAlgorithm.AWS4_HMAC_SHA256.name().replaceAll('_', '-') + '&' +
-			AmazonSpecific.X_Amz_Credential.name().replaceAll('_', '-') + '=' + credential + '&' +
-			AmazonSpecific.X_Amz_Date.name().replaceAll('_', '-') + '=' + nowDateTime + '&' +
-			AmazonSpecific.X_Amz_Expires.name().replaceAll('_', '-') + '=' + MAX_TIMEOUT + '&' +
-			AmazonSpecific.X_Amz_SignedHeaders.name().replaceAll('_', '-') + '=' + hostHeader + '\n' +
+			requiredSignatureQueryParameters + '\n' +
 			hostHeader + ':' + awsData.host + '\n\n' + 
 			hostHeader + '\n' +
 			AmazonSpecific.UNSIGNED_PAYLOAD.name().replaceAll('_', '-');
@@ -64,7 +66,8 @@ public virtual without sharing class AmazonWebServicesHelper {
 			nowDateTime + '\n' +
 			request + '\n' + 
 			EncodingUtil.convertToHex(
-				Crypto.generateDigest(HashAlgorithm.SHA256.name(), Blob.valueOf(canonicalRequest))
+				Crypto.generateDigest(HashAlgorithm.SHA256.name(), 
+				Blob.valueOf(canonicalRequest))
 			);
 
 		final Blob signingKey = 
@@ -88,17 +91,14 @@ public virtual without sharing class AmazonWebServicesHelper {
 		);
 
 		final String signature = EncodingUtil.convertToHex(
-			Crypto.generateMac(HashAlgorithm.hmacSHA256.name(), Blob.valueOf(toSign), signingKey)
+			Crypto.generateMac(
+				HashAlgorithm.hmacSHA256.name(), 
+				Blob.valueOf(toSign), signingKey
+			)
 		);
 
-		return
-			'?' + AmazonSpecific.X_Amz_Algorithm.name().replaceAll('_', '-') + '=' + 
-				HashAlgorithm.AWS4_HMAC_SHA256.name().replaceAll('_', '-') + '&' + 
-			AmazonSpecific.X_Amz_Credential.name().replaceAll('_', '-') + '=' + credential + '&' +
-			AmazonSpecific.X_Amz_Date.name().replaceAll('_', '-') + '=' + nowDateTime + '&' + 
-			AmazonSpecific.X_Amz_Expires.name().replaceAll('_', '-') + '=' + MAX_TIMEOUT + '&' +
-			AmazonSpecific.X_Amz_Signature.name().replaceAll('_', '-') + '=' + signature + '&' +
-			AmazonSpecific.X_Amz_SignedHeaders.name().replaceAll('_', '-') + '=' + hostHeader;
+		return '?' + requiredSignatureQueryParameters + '&' +
+			AmazonSpecific.X_Amz_Signature.name().replaceAll('_', '-') + '=' + signature;
 	}
 
 	protected String encodeString(String toEncode, Boolean encodeSlash) {
@@ -107,15 +107,16 @@ public virtual without sharing class AmazonWebServicesHelper {
 		final String tilde = '~';
 		final String slash = '/';
 
-		String result = EncodingUtil.urlEncode(toEncode, Encoding.UTF_8.name().replace('_', '-'))
-			.replaceAll(
-				EncodingUtil.urlEncode(tilde, Encoding.UTF_8.name().replace('_', '-')), 
-				tilde
-			)
-			.replaceAll(
-				plus, 
-				EncodingUtil.urlEncode(space, Encoding.UTF_8.name().replace('_', '-'))
-			);
+		String result = 
+			EncodingUtil.urlEncode(toEncode, Encoding.UTF_8.name().replace('_', '-'))
+				.replaceAll(
+					EncodingUtil.urlEncode(tilde, Encoding.UTF_8.name().replace('_', '-')), 
+					tilde
+				)
+				.replaceAll(
+					plus, 
+					EncodingUtil.urlEncode(space, Encoding.UTF_8.name().replace('_', '-'))
+				);
 
 		if (!encodeSlash) {
 			result = result.replaceAll(

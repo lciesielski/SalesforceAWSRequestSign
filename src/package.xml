@@ -1,30 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
-        <members>ExceptionUtils</members>
-        <members>LogUtils</members>
-        <members>LogUtilsTest</members>
-        <members>RestApiBase</members>
-        <members>RestApiBaseTest</members>
-        <members>RestApiErrorResult</members>
-        <members>RestApiResult</members>
-        <members>RestApiResultTest</members>
-        <members>RestApiSuccessResult</members>
-        <members>RestApiTestBase</members>
-        <members>UserApiExternalIntegration</members>
-        <members>UserApiExternalIntegrationTest</members>
-        <members>UserApiInternalIntegration</members>
-        <members>UserApiInternalIntegrationTest</members>
-        <members>UserRestApi</members>
+        <members>AmazonBucketHelper</members>
+        <members>AmazonWebServicesHelper</members>
         <name>ApexClass</name>
-    </types>
-    <types>
-        <members>CustomLabels</members>
-        <name>CustomLabels</name>
-    </types>
-    <types>
-        <members>User</members>
-        <name>CustomObject</name>
     </types>
     <version>53.0</version>
 </Package>

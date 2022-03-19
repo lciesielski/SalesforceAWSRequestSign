@@ -1,4 +1,4 @@
-name: REST API Framework
+name: AWS Request Sign
 
 on:
   push:

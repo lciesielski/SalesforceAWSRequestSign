@@ -23,9 +23,8 @@ public without sharing class AmazonBucketHelper extends AmazonWebServicesHelper 
 		request.setEndpoint(
 			'https://' + awsBucketData.host + '/' + awsBucketData.path + getSignatureWithoutPayload(awsBucketData)
 		);
-
-		System.debug(request.getEndpoint());
-		System.debug(new Http().send(request).getBody());
+		
+		new Http().send(request);
 	}
 
 	public class AmazunBucketData extends AmazonData {
