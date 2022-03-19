@@ -2,24 +2,25 @@
 private class AmazonBucketHelperTest {
 
 	private static final String FILE_NAME = '3032248';
+	private static final String FILE_EXTENSION = '.jpg';
 
 	@TestSetup
 	private static void setup() {
 		insert new List<Configuration__c>{
 			new Configuration__c(
-				Name = 'AWS_KEY',
-				Value__c = 'AWS_KEY'
+				Name = AmazonWebServicesHelper.Config.AWS_KEY.name(),
+				Value__c = AmazonWebServicesHelper.Config.AWS_KEY.name()
 			), 
 			new Configuration__c(
-				Name = 'AWS_SECRET',
-				Value__c = 'AWS_SECRET'
+				Name = AmazonWebServicesHelper.Config.AWS_SECRET.name(),
+				Value__c = AmazonWebServicesHelper.Config.AWS_SECRET.name()
 			)
 		};
 
 		insert new ContentVersion(
 			Title = FILE_NAME,
-			PathOnClient = FILE_NAME + '.jpg',
-			VersionData = Blob.valueOf('Test Content'),
+			PathOnClient = FILE_NAME + FILE_EXTENSION,
+			VersionData = Blob.valueOf('FAKE_DATA'),
 			IsMajorVersion = true
 		);
 	}
@@ -27,20 +28,8 @@ private class AmazonBucketHelperTest {
 	@IsTest
 	private static void itShouldDeleteObject() {
 		// Given
-		final AmazonBucketHelper.ExtendedRequestData awsBucketData = 
-			new AmazonBucketHelper.ExtendedRequestData();
-		
-		awsBucketData.key = Configuration__c.getInstance(
-			AmazonWebServicesHelper.Config.AWS_KEY.name()
-		).Value__c;
-		awsBucketData.secret = Configuration__c.getInstance(
-			AmazonWebServicesHelper.Config.AWS_SECRET.name()
-		).Value__c;
-
-		awsBucketData.serviceName = 's3';
-		awsBucketData.serviceRegion = 'eu-central-1';
-		awsBucketData.bucketName = 'asgard-0';
-		awsBucketData.objectKey = '3032248.jpg';
+		final AmazonBucketHelper.ExtendedRequestData awsBucketData = initBucketData();
+		awsBucketData.objectKey = FILE_NAME + FILE_EXTENSION;
 		awsBucketData.httpMethod = AmazonWebServicesHelper.HttpMethod.HTTP_DELETE;
 
 		Test.setMock(HttpCalloutMock.class, new AmazonBucketHelperMock());
@@ -67,19 +56,7 @@ private class AmazonBucketHelperTest {
 			WHERE Title = :FILE_NAME
 		];
 
-		final AmazonBucketHelper.ExtendedRequestData awsBucketData = 
-			new AmazonBucketHelper.ExtendedRequestData();
-
-		awsBucketData.key = Configuration__c.getInstance(
-			AmazonWebServicesHelper.Config.AWS_KEY.name()
-		).Value__c;
-		awsBucketData.secret = Configuration__c.getInstance(
-			AmazonWebServicesHelper.Config.AWS_SECRET.name()
-		).Value__c;
-
-		awsBucketData.serviceName = 's3';
-		awsBucketData.serviceRegion = 'eu-central-1';
-		awsBucketData.bucketName = 'asgard-0';
+		final AmazonBucketHelper.ExtendedRequestData awsBucketData = initBucketData();
 		awsBucketData.objectKey = document.Title + '.' + document.FileExtension;
 		awsBucketData.binaryPayload = document.VersionData;
 		awsBucketData.httpMethod = AmazonWebServicesHelper.HttpMethod.HTTP_PUT;
@@ -98,6 +75,24 @@ private class AmazonBucketHelperTest {
 			response.getStatusCode()
 		);
 		Test.stopTest();
+	}
+
+	private static AmazonBucketHelper.ExtendedRequestData initBucketData() {
+		final AmazonBucketHelper.ExtendedRequestData result = 
+			new AmazonBucketHelper.ExtendedRequestData();
+
+		result.key = Configuration__c.getInstance(
+			AmazonWebServicesHelper.Config.AWS_KEY.name()
+		).Value__c;
+		result.secret = Configuration__c.getInstance(
+			AmazonWebServicesHelper.Config.AWS_SECRET.name()
+		).Value__c;
+
+		result.serviceName = 's3';
+		result.serviceRegion = 'eu-central-1';
+		result.bucketName = 'asgard-0';
+
+		return result;
 	}
 
 }
