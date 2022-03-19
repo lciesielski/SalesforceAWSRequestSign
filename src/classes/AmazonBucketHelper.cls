@@ -3,6 +3,9 @@ public without sharing class AmazonBucketHelper extends AmazonWebServicesHelper 
 	public HttpResponse deleteBucketObject(String awsKey, String awsSecret, String bucketName, String objectKey) {
 		final AmazunBucketData awsBucketData = new AmazunBucketData();
 
+		String pmdTest = awsBucketData?.awsKey;
+		awsBucketData.bucketName = pmdTest;
+
 		awsBucketData.awsKey = awsKey;
 		awsBucketData.awsSecret = awsSecret;
 
