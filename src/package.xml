@@ -7,5 +7,9 @@
         <members>AmazonWebServicesHelper</members>
         <name>ApexClass</name>
     </types>
+    <types>
+        <members>Configuration__c</members>
+        <name>CustomObject</name>
+    </types>
     <version>53.0</version>
 </Package>
