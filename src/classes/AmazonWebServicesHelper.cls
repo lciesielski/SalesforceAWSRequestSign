@@ -1,4 +1,4 @@
-public virtual without sharing class AmazonWebServicesHelper extends EnumUtils {
+public virtual without sharing class AmazonWebServicesHelper {
 
 	@SuppressWarnings('PMD.FieldNamingConventions')
 	public enum AmazonSpecific {
@@ -68,40 +68,15 @@ public virtual without sharing class AmazonWebServicesHelper extends EnumUtils {
 			hostHeader + '\n' +
 			EnumUtils.getNameWithDashes(AmazonSpecific.UNSIGNED_PAYLOAD);
 
-		final String toSign = 
-			EnumUtils.getNameWithDashes(HashAlgorithm.AWS4_HMAC_SHA256) + '\n' +
-			nowDateTime + '\n' +
-			requestMetadata + '\n' + 
-			EncodingUtil.convertToHex(
-				Crypto.generateDigest(
-					HashAlgorithm.SHA256.name(), 
-					Blob.valueOf(canonicalRequest)
-				)
-			);
-
-		final Blob signingKey = Crypto.generateMac(
-			HashAlgorithm.hmacSHA256.name(), 
-			Blob.valueOf(AmazonSpecific.aws4_request.name()), 
-			Crypto.generateMac(
-				HashAlgorithm.hmacSHA256.name(), 
-				Blob.valueOf(requestData.serviceName), 
-				Crypto.generateMac(
-					HashAlgorithm.hmacSHA256.name(), 
-					Blob.valueOf(requestData.serviceRegion), 
-					Crypto.generateMac(
-						HashAlgorithm.hmacSHA256.name(), 
-						Blob.valueOf(nowDate), 
-						Blob.valueOf(AmazonSpecific.AWS4.name() + requestData.secret)
-					)
-				)
-			)
-		);
-
 		final String signature = EncodingUtil.convertToHex(
 			Crypto.generateMac(
 				HashAlgorithm.hmacSHA256.name(), 
-				Blob.valueOf(toSign), 
-				signingKey
+				Blob.valueOf(
+					generateToSignString(
+						nowDateTime, requestMetadata, canonicalRequest
+					)
+				), 
+				generateSigningKey(requestData, nowDate)
 			)
 		);
 
@@ -148,40 +123,15 @@ public virtual without sharing class AmazonWebServicesHelper extends EnumUtils {
 			signedHeaders + '\n' +
 			payload;
 
-		final String toSign = 
-			EnumUtils.getNameWithDashes(HashAlgorithm.AWS4_HMAC_SHA256) + '\n' +
-			nowDateTime + '\n' +
-			requestMetadata + '\n' + 
-			EncodingUtil.convertToHex(
-				Crypto.generateDigest(
-					HashAlgorithm.SHA256.name(), 
-					Blob.valueOf(canonicalRequest)
-				)
-			);
-
-		final Blob signingKey = Crypto.generateMac(
-			HashAlgorithm.hmacSHA256.name(), 
-			Blob.valueOf(AmazonSpecific.aws4_request.name()), 
-			Crypto.generateMac(
-				HashAlgorithm.hmacSHA256.name(), 
-				Blob.valueOf(requestData.serviceName), 
-				Crypto.generateMac(
-					HashAlgorithm.hmacSHA256.name(), 
-					Blob.valueOf(requestData.serviceRegion), 
-					Crypto.generateMac(
-						HashAlgorithm.hmacSHA256.name(), 
-						Blob.valueOf(nowDate), 
-						Blob.valueOf(AmazonSpecific.AWS4.name() + requestData.secret)
-					)
-				)
-			)
-		);
-
 		final String signature = EncodingUtil.convertToHex(
 			Crypto.generateMac(
 				HashAlgorithm.hmacSHA256.name(), 
-				Blob.valueOf(toSign), 
-				signingKey
+				Blob.valueOf(
+					generateToSignString(
+						nowDateTime, requestMetadata, canonicalRequest
+					)
+				), 
+				generateSigningKey(requestData, nowDate)
 			)
 		);
 
@@ -197,7 +147,6 @@ public virtual without sharing class AmazonWebServicesHelper extends EnumUtils {
 				AmazonSpecific.X_Amz_Date
 			).toLowerCase() => nowDateTime
 		};
-
 	}
 
 	protected String encodeString(String toEncode, Boolean encodeSlash) {
@@ -225,6 +174,39 @@ public virtual without sharing class AmazonWebServicesHelper extends EnumUtils {
 		}
 
 		return result;
+	}
+
+	private String generateToSignString(String nowDateTime, String requestMetadata, String canonicalRequest) {
+		return 
+			EnumUtils.getNameWithDashes(HashAlgorithm.AWS4_HMAC_SHA256) + '\n' +
+			nowDateTime + '\n' +
+			requestMetadata + '\n' + 
+			EncodingUtil.convertToHex(
+				Crypto.generateDigest(
+					HashAlgorithm.SHA256.name(), 
+					Blob.valueOf(canonicalRequest)
+				)
+			);
+	}
+
+	private Blob generateSigningKey(RequestData requestData, String nowDate) {
+		return Crypto.generateMac(
+			HashAlgorithm.hmacSHA256.name(), 
+			Blob.valueOf(AmazonSpecific.aws4_request.name()), 
+			Crypto.generateMac(
+				HashAlgorithm.hmacSHA256.name(), 
+				Blob.valueOf(requestData.serviceName), 
+				Crypto.generateMac(
+					HashAlgorithm.hmacSHA256.name(), 
+					Blob.valueOf(requestData.serviceRegion), 
+					Crypto.generateMac(
+						HashAlgorithm.hmacSHA256.name(), 
+						Blob.valueOf(nowDate), 
+						Blob.valueOf(AmazonSpecific.AWS4.name() + requestData.secret)
+					)
+				)
+			)
+		);
 	}
 
 	public abstract class RequestData {
