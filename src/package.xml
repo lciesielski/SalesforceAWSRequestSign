@@ -5,6 +5,8 @@
         <members>AmazonBucketHelperMock</members>
         <members>AmazonBucketHelperTest</members>
         <members>AmazonWebServicesHelper</members>
+        <members>EnumUtils</members>
+        <members>HttpWrapper</members>
         <name>ApexClass</name>
     </types>
     <types>

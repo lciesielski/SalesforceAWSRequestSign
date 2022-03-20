@@ -1,7 +1,5 @@
 public virtual without sharing class AmazonWebServicesHelper {
 
-	public static final Http CLIENT = new Http();
-
 	@SuppressWarnings('PMD.FieldNamingConventions')
 	public enum AmazonSpecific {
 		aws4_request,
@@ -38,7 +36,7 @@ public virtual without sharing class AmazonWebServicesHelper {
 		HTTP_DELETE
 	}
 
-	public final Integer maxTimeoutSeconds = 2 * 60;
+	public final Integer presignURLExpiration = 30;
 
 	protected String getPresignedURLSignature(RequestData requestData) {
 		final DateTime now = System.now();
@@ -54,45 +52,45 @@ public virtual without sharing class AmazonWebServicesHelper {
 		);
 
 		final String requiredSignatureQueryParameters = 
-			AmazonSpecific.X_Amz_Algorithm.name().replaceAll('_', '-') + '=' + 
-				HashAlgorithm.AWS4_HMAC_SHA256.name().replaceAll('_', '-') + '&' +
-			AmazonSpecific.X_Amz_Credential.name().replaceAll('_', '-') + '=' + credential + '&' +
-			AmazonSpecific.X_Amz_Date.name().replaceAll('_', '-') + '=' + nowDateTime + '&' +
-			AmazonSpecific.X_Amz_Expires.name().replaceAll('_', '-') + '=' + maxTimeoutSeconds + '&' +
-			AmazonSpecific.X_Amz_SignedHeaders.name().replaceAll('_', '-') + '=' + hostHeader;
+			EnumUtils.getNameWithDashes(AmazonSpecific.X_Amz_Algorithm) + '=' + 
+				EnumUtils.getNameWithDashes(HashAlgorithm.AWS4_HMAC_SHA256) + '&' +
+			EnumUtils.getNameWithDashes(AmazonSpecific.X_Amz_Credential) + '=' + credential + '&' +
+			EnumUtils.getNameWithDashes(AmazonSpecific.X_Amz_Date) + '=' + nowDateTime + '&' +
+			EnumUtils.getNameWithDashes(AmazonSpecific.X_Amz_Expires) + '=' + presignURLExpiration + '&' +
+			EnumUtils.getNameWithDashes(AmazonSpecific.X_Amz_SignedHeaders) + '=' + hostHeader;
 
 		final String canonicalRequest = 
-			requestData.httpMethod.name().removeStart('HTTP_') + '\n' +
+			EnumUtils.getHttpMethod(requestData.httpMethod) + '\n' +
 			'/' + requestData.path + '\n' +
 			requiredSignatureQueryParameters + '\n' +
 			hostHeader + ':' + requestData.host + '\n\n' + 
 			hostHeader + '\n' +
-			AmazonSpecific.UNSIGNED_PAYLOAD.name().replaceAll('_', '-');
+			EnumUtils.getNameWithDashes(AmazonSpecific.UNSIGNED_PAYLOAD);
 
 		final String toSign = 
-			HashAlgorithm.AWS4_HMAC_SHA256.name().replaceAll('_', '-') + '\n' +
+			EnumUtils.getNameWithDashes(HashAlgorithm.AWS4_HMAC_SHA256) + '\n' +
 			nowDateTime + '\n' +
 			request + '\n' + 
 			EncodingUtil.convertToHex(
-				Crypto.generateDigest(HashAlgorithm.SHA256.name(), 
-				Blob.valueOf(canonicalRequest))
+				Crypto.generateDigest(
+					HashAlgorithm.SHA256.name(), 
+					Blob.valueOf(canonicalRequest)
+				)
 			);
 
-		final Blob signingKey = 
+		final Blob signingKey = Crypto.generateMac(
+			HashAlgorithm.hmacSHA256.name(), 
+			Blob.valueOf(AmazonSpecific.aws4_request.name()), 
 			Crypto.generateMac(
 				HashAlgorithm.hmacSHA256.name(), 
-				Blob.valueOf(AmazonSpecific.aws4_request.name()), 
+				Blob.valueOf(requestData.serviceName), 
 				Crypto.generateMac(
 					HashAlgorithm.hmacSHA256.name(), 
-					Blob.valueOf(requestData.serviceName), 
+					Blob.valueOf(requestData.serviceRegion), 
 					Crypto.generateMac(
 						HashAlgorithm.hmacSHA256.name(), 
-						Blob.valueOf(requestData.serviceRegion), 
-						Crypto.generateMac(
-							HashAlgorithm.hmacSHA256.name(), 
-							Blob.valueOf(nowDate), 
-							Blob.valueOf(AmazonSpecific.AWS4.name() + requestData.secret
-						)
+						Blob.valueOf(nowDate), 
+						Blob.valueOf(AmazonSpecific.AWS4.name() + requestData.secret)
 					)
 				)
 			)
@@ -101,12 +99,13 @@ public virtual without sharing class AmazonWebServicesHelper {
 		final String signature = EncodingUtil.convertToHex(
 			Crypto.generateMac(
 				HashAlgorithm.hmacSHA256.name(), 
-				Blob.valueOf(toSign), signingKey
+				Blob.valueOf(toSign), 
+				signingKey
 			)
 		);
 
 		return '?' + requiredSignatureQueryParameters + '&' +
-			AmazonSpecific.X_Amz_Signature.name().replaceAll('_', '-') + '=' + signature;
+			EnumUtils.getNameWithDashes(AmazonSpecific.X_Amz_Signature) + '=' + signature;
 	}
 
 	protected String encodeString(String toEncode, Boolean encodeSlash) {
@@ -116,19 +115,19 @@ public virtual without sharing class AmazonWebServicesHelper {
 		final String slash = '/';
 
 		String result = 
-			EncodingUtil.urlEncode(toEncode, Encoding.UTF_8.name().replace('_', '-'))
+			EncodingUtil.urlEncode(toEncode, EnumUtils.getNameWithDashes(Encoding.UTF_8))
 				.replaceAll(
-					EncodingUtil.urlEncode(tilde, Encoding.UTF_8.name().replace('_', '-')), 
+					EncodingUtil.urlEncode(tilde, EnumUtils.getNameWithDashes(Encoding.UTF_8)), 
 					tilde
 				)
 				.replaceAll(
 					plus, 
-					EncodingUtil.urlEncode(space, Encoding.UTF_8.name().replace('_', '-'))
+					EncodingUtil.urlEncode(space, EnumUtils.getNameWithDashes(Encoding.UTF_8))
 				);
 
 		if (!encodeSlash) {
 			result = result.replaceAll(
-				EncodingUtil.urlEncode(slash, Encoding.UTF_8.name().replace('_', '-')), 
+				EncodingUtil.urlEncode(slash, EnumUtils.getNameWithDashes(Encoding.UTF_8)), 
 				slash
 			);
 		}
@@ -136,7 +135,7 @@ public virtual without sharing class AmazonWebServicesHelper {
 		return result;
 	}
 
-	public virtual class RequestData {
+	public abstract class RequestData {
 		public HttpMethod httpMethod;
 		
 		public String key;

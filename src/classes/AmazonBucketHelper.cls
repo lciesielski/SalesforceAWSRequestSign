@@ -28,7 +28,7 @@ public without sharing class AmazonBucketHelper extends AmazonWebServicesHelper 
 			}
 		}
 
-		return CLIENT.send(request);
+		return HttpWrapper.CLIENT.send(request);
 	}
 
 	public class ExtendedRequestData extends RequestData {
