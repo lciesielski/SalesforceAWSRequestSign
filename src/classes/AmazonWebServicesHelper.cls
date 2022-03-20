@@ -1,4 +1,4 @@
-public virtual without sharing class AmazonWebServicesHelper {
+public virtual without sharing class AmazonWebServicesHelper extends EnumUtils {
 
 	@SuppressWarnings('PMD.FieldNamingConventions')
 	public enum AmazonSpecific {
@@ -9,6 +9,7 @@ public virtual without sharing class AmazonWebServicesHelper {
 		X_Amz_Expires,
 		X_Amz_Signature,
 		X_Amz_SignedHeaders,
+		X_Amz_Content_Sha256,
 		AWS4,
 		UNSIGNED_PAYLOAD
 	}
@@ -43,11 +44,11 @@ public virtual without sharing class AmazonWebServicesHelper {
 		final String nowDate = now.format('yyyyMMdd');
 		final String nowDateTime = now.format('yyyyMMdd\'T\'HHmmss\'Z\'');
 		final String hostHeader = 'host';
-		final String request = 
+		final String requestMetadata = 
 			nowDate + '/' + requestData.serviceRegion + '/' + requestData.serviceName + '/' + AmazonSpecific.aws4_request.name();
 
 		final String credential = encodeString(
-			requestData.key + '/' + request,
+			requestData.key + '/' + requestMetadata,
 			true
 		);
 
@@ -70,7 +71,7 @@ public virtual without sharing class AmazonWebServicesHelper {
 		final String toSign = 
 			EnumUtils.getNameWithDashes(HashAlgorithm.AWS4_HMAC_SHA256) + '\n' +
 			nowDateTime + '\n' +
-			request + '\n' + 
+			requestMetadata + '\n' + 
 			EncodingUtil.convertToHex(
 				Crypto.generateDigest(
 					HashAlgorithm.SHA256.name(), 
@@ -106,6 +107,97 @@ public virtual without sharing class AmazonWebServicesHelper {
 
 		return '?' + requiredSignatureQueryParameters + '&' +
 			EnumUtils.getNameWithDashes(AmazonSpecific.X_Amz_Signature) + '=' + signature;
+	}
+
+	protected Map<String, String> getHeadersSignature(RequestData requestData) {
+		final DateTime now = System.now();
+		final String semicolon = ';';
+		final String nowDate = now.format('yyyyMMdd');
+		final String nowDateTime = now.format('yyyyMMdd\'T\'HHmmss\'Z\'');
+		final String requestMetadata = 
+			nowDate + '/' + requestData.serviceRegion + '/' + requestData.serviceName + '/' + AmazonSpecific.aws4_request.name();
+
+		final String payload = EncodingUtil.convertToHex(
+			Crypto.generateDigest(
+				HashAlgorithm.SHA256.name(), 
+				Blob.valueOf('')
+			)
+		);
+
+		final Map<String, String> requiredSignatureHeaders = new Map<String, String>{
+			'host' => requestData.host,
+			EnumUtils.getNameWithDashes(
+				AmazonSpecific.X_Amz_Content_Sha256
+			).toLowerCase() => payload,
+			EnumUtils.getNameWithDashes(
+				AmazonSpecific.X_Amz_Date
+			).toLowerCase() => nowDateTime
+		};
+
+		final String signedHeaders = String.join(new List<String>(requiredSignatureHeaders.keySet()), semicolon);
+
+		String headers = '';
+		for (String header : requiredSignatureHeaders.keySet()) {
+			headers += header + ':' + requiredSignatureHeaders.get(header) + '\n';
+		}
+
+		final String canonicalRequest = 
+			EnumUtils.getHttpMethod(requestData.httpMethod) + '\n' +
+			'/' + requestData.path + '\n\n' +
+			headers + '\n' + 
+			signedHeaders + '\n' +
+			payload;
+
+		final String toSign = 
+			EnumUtils.getNameWithDashes(HashAlgorithm.AWS4_HMAC_SHA256) + '\n' +
+			nowDateTime + '\n' +
+			requestMetadata + '\n' + 
+			EncodingUtil.convertToHex(
+				Crypto.generateDigest(
+					HashAlgorithm.SHA256.name(), 
+					Blob.valueOf(canonicalRequest)
+				)
+			);
+
+		final Blob signingKey = Crypto.generateMac(
+			HashAlgorithm.hmacSHA256.name(), 
+			Blob.valueOf(AmazonSpecific.aws4_request.name()), 
+			Crypto.generateMac(
+				HashAlgorithm.hmacSHA256.name(), 
+				Blob.valueOf(requestData.serviceName), 
+				Crypto.generateMac(
+					HashAlgorithm.hmacSHA256.name(), 
+					Blob.valueOf(requestData.serviceRegion), 
+					Crypto.generateMac(
+						HashAlgorithm.hmacSHA256.name(), 
+						Blob.valueOf(nowDate), 
+						Blob.valueOf(AmazonSpecific.AWS4.name() + requestData.secret)
+					)
+				)
+			)
+		);
+
+		final String signature = EncodingUtil.convertToHex(
+			Crypto.generateMac(
+				HashAlgorithm.hmacSHA256.name(), 
+				Blob.valueOf(toSign), 
+				signingKey
+			)
+		);
+
+		return new Map<String, String>{
+			'Authorization' => 
+				EnumUtils.getNameWithDashes(HashAlgorithm.AWS4_HMAC_SHA256) + ' ' + 
+				'Credential=' + requestData.key + '/' + requestMetadata + ', ' + 
+				'SignedHeaders=' + signedHeaders + ', Signature=' + signature,
+			EnumUtils.getNameWithDashes(
+				AmazonSpecific.X_Amz_Content_Sha256
+			).toLowerCase() => payload,
+			EnumUtils.getNameWithDashes(
+				AmazonSpecific.X_Amz_Date
+			).toLowerCase() => nowDateTime
+		};
+
 	}
 
 	protected String encodeString(String toEncode, Boolean encodeSlash) {

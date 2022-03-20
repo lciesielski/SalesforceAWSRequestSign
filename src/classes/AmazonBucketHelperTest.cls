@@ -26,7 +26,7 @@ private class AmazonBucketHelperTest {
 	}
 
 	@IsTest
-	private static void itShouldDeleteObject() {
+	private static void itShouldDeleteObjectQueryAuth() {
 		// Given
 		final AmazonBucketHelper.ExtendedRequestData awsBucketData = initBucketData();
 		awsBucketData.objectKey = FILE_NAME + FILE_EXTENSION;
@@ -37,7 +37,7 @@ private class AmazonBucketHelperTest {
 		// When
 		Test.startTest();
 		final HttpResponse response = 
-			new AmazonBucketHelper(awsBucketData).sendRequestToS3Bucket();
+			new AmazonBucketHelper(awsBucketData).sendRequestParamAuthorization();
 
 		// Then
 		System.assertEquals(
@@ -48,7 +48,7 @@ private class AmazonBucketHelperTest {
 	}
 
 	@IsTest
-	private static void itShouldPutObject() {
+	private static void itShouldPutObjectQueryAuth() {
 		// Given
 		final ContentVersion document = [
 			SELECT ContentSize, FileExtension, Title, VersionData 
@@ -67,7 +67,29 @@ private class AmazonBucketHelperTest {
 		// When
 		Test.startTest();
 		final HttpResponse response = 
-			new AmazonBucketHelper(awsBucketData).sendRequestToS3Bucket();
+			new AmazonBucketHelper(awsBucketData).sendRequestParamAuthorization();
+
+		// Then
+		System.assertEquals(
+			200,
+			response.getStatusCode()
+		);
+		Test.stopTest();
+	}
+
+	@IsTest
+	private static void itShouldDeleteObjectHeaderAuth() {
+		// Given
+		final AmazonBucketHelper.ExtendedRequestData awsBucketData = initBucketData();
+		awsBucketData.objectKey = FILE_NAME + FILE_EXTENSION;
+		awsBucketData.httpMethod = AmazonWebServicesHelper.HttpMethod.HTTP_DELETE;
+
+		Test.setMock(HttpCalloutMock.class, new AmazonBucketHelperMock());
+
+		// When
+		Test.startTest();
+		final HttpResponse response = 
+			new AmazonBucketHelper(awsBucketData).sendRequestHeaderAuthorization();
 
 		// Then
 		System.assertEquals(
